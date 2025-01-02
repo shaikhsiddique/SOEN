@@ -6,4 +6,8 @@ const router = Router();
 
 router.post('/create',auth,(req,res)=>projectController.createProjectController(req,res));
 
+router.get('/all',auth,(req,res)=>projectController.getAllProjectController(req,res))
+
+router.put('/add-user',auth ,(req,res)=>projectController.addUserController(req,res));
+
 export default router
