@@ -5,7 +5,6 @@ import { verifyToken } from '../utils/jwt.js';
 const auth = async (req, res, next) => {
     try {
         const token = req.cookies.authToken || req.headers.authorization?.split(' ')[1];
-        console.log(token);
         if (!token) {
             return res.status(401).send({ error: "Access Denied. No token provided." });
         }

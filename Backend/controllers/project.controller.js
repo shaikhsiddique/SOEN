@@ -2,11 +2,10 @@ import { projectModel, validateProjectModel } from '../models/project.model.js';
 import projectService from '../services/project.service.js';
 
 const createProjectController = async (req, res) => {
-  console.log(req.body);
-  
   try {
-    const { name, userId } = req.body;
-    const { error } = validateProjectModel(req.body);
+    const { name} = req.body;
+    const userId = req.user.id;
+    const { error } = validateProjectModel({name,userId});
     if (error) {
       return res.status(400).json({
         success: false,
