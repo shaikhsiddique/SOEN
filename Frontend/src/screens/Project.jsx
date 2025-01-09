@@ -1,5 +1,6 @@
-import React, { useState, useContext, useEffect } from "react";
+import React, { useState, useContext, useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
+import { UserContext } from "../context/UserContext";
 import axois from '../config/axois';
 import {initializeSocket ,receiveMessage ,sendMessage} from '../config/socket.js'
 
@@ -10,9 +11,12 @@ function Project() {
   const [ project, setProject ] = useState(location.state.project)
   const [ selectedUserId, setSelectedUserId ] = useState(new Set()) // Initialized as Set
   const [ users, setUsers ] = useState([]);
+  const { user, setUser } = useContext(UserContext);
+  const [message, setMessage] = useState('')
   const token = localStorage.getItem("SOENtoken");
+  const messageBox = useRef(null);
+  const conversationArea = useRef(null);
  
-
   const handleUserClick = (id) => {
     setSelectedUserId((prevSelectedUserId) => {
       const newSelectedUserId = new Set(prevSelectedUserId);
@@ -48,11 +52,81 @@ function Project() {
         console.log(err);
       });
   };
+
+  const send = () => {
+    if(message ===''){
+      return;
+    }
+    const data = {
+      message,
+      sender: user
+    }
+    setMessage('')
+    sendMessage("project-message",data);
+    appendSendMessage(data);
+    
+  } 
+
+  const appendIncomingMessage = (data) => {
+    const messageElement = document.createElement("div");
+    messageElement.classList.add(
+      "incoming", "max-w-52", "flex", "flex-col", "p-2", "bg-slate-50", "rounded-md", "shadow", "w-fit"
+    );
+  
+    const emailElement = document.createElement("h5");
+    emailElement.classList.add("text-gray-500", "text-xs", "font-medium");
+    emailElement.textContent = data.sender.email;
+    messageElement.appendChild(emailElement);
+  
+    const messageTextElement = document.createElement("p");
+    messageTextElement.className = "text-sm font-semibold text-black break-words whitespace-normal";
+    messageTextElement.textContent = data.message;
+    messageElement.appendChild(messageTextElement);
+  
+    messageBox.current.appendChild(messageElement);
+    conversationArea.current.scrollTop = conversationArea.current.scrollHeight;
+  };
+
+  const appendSendMessage = (data) => {
+    const messageElement = document.createElement("div");
+    messageElement.classList.add(
+      "incoming","ml-auto", "max-w-52", "flex", "flex-col", "p-2", "bg-slate-50", "rounded-md", "shadow", "w-fit"
+    );
+  
+    const emailElement = document.createElement("h5");
+    emailElement.classList.add("text-gray-500", "text-xs", "font-medium");
+    emailElement.textContent = 'You';
+    messageElement.appendChild(emailElement);
+  
+    const messageTextElement = document.createElement("p");
+    messageTextElement.className = "text-sm font-semibold text-black break-words whitespace-normal";
+    messageTextElement.textContent = data.message;
+    messageElement.appendChild(messageTextElement);
+  
+    messageBox.current.appendChild(messageElement);
+    conversationArea.current.scrollTop = conversationArea.current.scrollHeight;
+  };
   
 
-  useEffect(()=>{
+  useEffect(() => {
+    const socket = initializeSocket(project._id);
 
-    initializeSocket();
+    const messageHandler = (data) => {
+      if(data.sender.id === user.id){
+        appendSendMessage(data);
+        return;
+      }
+      appendIncomingMessage(data);
+    };
+
+    receiveMessage('project-message', messageHandler);
+
+    return () => {
+      socket.off('project-message', messageHandler);
+    };
+  }, [project._id]);
+
+  useEffect(()=>{
 
     axois.get('/user/all', {
       headers: {
@@ -92,28 +166,23 @@ function Project() {
             <i className="ri-group-fill"></i>
           </button>
         </header>
-        <div className="conversation-area flex-grow flex flex-col">
-          <div className="message-box flex-grow flex flex-col gap-1 p-1">
-            <div className="incoming max-w-52 flex flex-col p-2 bg-slate-50 rounded-md shadow w-fit">
-              <h5 className="text-gray-500 text-xs font-medium">
-                example@gmail.com
-              </h5>
-              <p className="text-sm font-semibold text-black">Hello</p>
-            </div>
-            <div className="ml-auto max-w-52 flex flex-col p-2 bg-slate-50 rounded-md shadow w-fit">
-              <h5 className="text-gray-500 text-xs font-medium">
-                example@gmail.com
-              </h5>
-              <p className="text-sm font-semibold text-black">Hello</p>
-            </div>
+        <div ref={conversationArea} className="conversation-area flex-grow flex flex-col overflow-y-auto">
+          <div ref={messageBox} className="message-box flex-grow flex flex-col gap-1 p-1">
           </div>
           <div className="inputField flex w-full">
             <input
               className="p-2 px-4 border-none outline-none w-[83%]"
               type="text"
+              value={message}
+              onChange={(e)=>setMessage(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  send();
+                }
+              }}
               placeholder="Enter Message"
             />
-            <button className="p-3 px-4 bg-slate-400 text-xl w-[17%]">
+            <button onClick={()=>send()} className="p-3 px-4 bg-slate-400 text-xl w-[17%]">
               <i className="ri-send-plane-fill"></i>
             </button>
           </div>

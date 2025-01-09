@@ -4,6 +4,7 @@ import dotenv from 'dotenv'
 import { Server } from 'socket.io';
 import redisClient from './services/redis.service.js';
 import { verifyToken } from './utils/jwt.js';
+import mongoose from 'mongoose';
 dotenv.config();
 
 
@@ -23,10 +24,19 @@ const io = new Server(server,{
 io.use(async (socket, next) => {
     try {
         const token = socket.handshake.auth.token || socket.handshake.headers['authorization']?.split(' ')[1];
+        const projectId = socket.handshake.query.projectId;
+        
 
         if (!token) {
             return next(new Error("Access Denied. No token provided."));
         }
+
+        // Check if projectId is valid
+        const projectExists = await mongoose.model('Project').findById(projectId);
+        if (!projectExists) {
+            return next(new Error("Invalid projectId."));
+        }
+        socket.project = projectExists;
 
         const isBlacklisted = await redisClient.get(token);
         if (isBlacklisted) {
@@ -45,9 +55,19 @@ io.use(async (socket, next) => {
 })
 
 io.on('connection', socket => {
+
+    socket.roomId = socket.project._id.toString()
+
     console.log("Socket connected")
-  socket.on('event', data => { /* … */ });
-  socket.on('disconnect', () => { /* … */ });
+
+    socket.join(socket.roomId);
+
+    socket.on("project-message",data =>{
+        socket.broadcast.to(socket.roomId).emit("project-message",data);
+    })
+
+    socket.on('event', data => { /* … */ });
+    socket.on('disconnect', () => { /* … */ });
 });
 
 
