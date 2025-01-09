@@ -114,20 +114,57 @@ const loginUserController = async (req, res) => {
 };
 
 const profileController = async (req, res) => {
+ try {
   res.status(200).json({
     success: true,
     data: req.user,
   });
+ } catch (error) {
+  return res.status(500).json({
+    success: false,
+    message: "Something went wrong. Please try again later.",
+  });
+ }
 };
 
 const logoutController = async (req, res) => {
-  const token =
-    req.cookies.authToken || req.headers.authorization?.split(" ")[1];
-  redisClient.set(token, "logout", "EX", 4 * 60 * 60);
-  res.status(200).json({
-    success: true,
-    message: "Logout Successfully",
-  });
+  try {
+    const token = req.cookies.authToken || req.headers.authorization?.split(" ")[1];
+    redisClient.set(token, "logout", "EX", 4 * 60 * 60);
+    res.status(200).json({
+      success: true,
+      message: "Logout Successfully",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Something went wrong. Please try again later.",
+    });
+  }
+};
+
+const getAllUserController = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized: User ID is required",
+      });
+    }
+
+    const users = await userService.getAllUser({userId});
+    res.status(200).json({
+      success: true,
+      users: users,
+    });
+  } catch (error) {
+    console.error("Error in getAllUserController:", error.message);
+    return res.status(500).json({
+      success: false,
+      message: "Something went wrong. Please try again later.",
+    });
+  }
 };
 
 export default {
@@ -135,4 +172,5 @@ export default {
   loginUserController,
   profileController,
   logoutController,
+  getAllUserController,
 };

@@ -10,4 +10,6 @@ router.get('/all',auth,(req,res)=>projectController.getAllProjectController(req,
 
 router.put('/add-user',auth ,(req,res)=>projectController.addUserController(req,res));
 
+router.get('/:projectId',auth,(req,res)=>projectController.getProjectByIdController(req,res));
+
 export default router

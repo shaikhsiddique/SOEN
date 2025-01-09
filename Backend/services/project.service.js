@@ -1,7 +1,26 @@
 import { projectModel } from '../models/project.model.js';
 import mongoose from 'mongoose';
+
 const findProjectByName = async (name) => {
   return await projectModel.findOne({ name });
+};
+
+const findProjectById = async ({ projectId }) => {
+  try {
+    if (!mongoose.isValidObjectId(projectId)) {
+      throw new Error("Invalid project ID");
+    }
+
+    const project = await projectModel.findById(projectId).populate('users');
+
+    if (!project) {
+      throw new Error("Project not found");
+    }
+    return project;
+  } catch (error) {
+    console.error("Error finding project by ID:", error.message);
+    throw new Error("Failed to find project by ID");
+  }
 };
 
 const createProject = async (name, userId) => {
@@ -88,4 +107,4 @@ const updatedProject = await projectModel.findOneAndUpdate({
 return updatedProject
 }
 
-export default { findProjectByName, createProject,getAllProjectByUserId,addUsersToProject };
+export default { findProjectByName, createProject,getAllProjectByUserId,addUsersToProject,findProjectById };

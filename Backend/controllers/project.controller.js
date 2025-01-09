@@ -76,13 +76,28 @@ const addUserController = async (req, res) => {
       project,
     });
   } catch (error) {
-    console.log(err)
-    res.status(400).json({ error: err.message })
+    console.log(error)
+    res.status(400).json({ error: error.message })
   }
 };
+
+const getProjectByIdController = async (req,res) => {
+  try {
+    const projectId = req.params.projectId;
+    const project = await projectService.findProjectById({projectId});
+    if (!project) {
+      return res.status(404).json({ message: "Project not found." });
+    }
+    return res.status(200).json(project);
+  } catch (error) {
+    console.error("Error fetching project by ID:", error);
+    return res.status(500).json({ message: "An error occurred while fetching project by ID" });
+  }
+}
 
 export default {
   createProjectController,
   getAllProjectController,
   addUserController,
+  getProjectByIdController
 };
