@@ -6,6 +6,7 @@ import cors from 'cors';
 
 import userRouter from './routes/user.routes.js';
 import projectRouter from './routes/project.routes.js'
+import aiRouter from './routes/ai.routes.js';
 
 const app = express();
 
@@ -18,5 +19,6 @@ app.use(cors());
 
 app.use('/user', userRouter);
 app.use('/project',projectRouter);
+app.use('/ai',aiRouter);
 
 export default app;
