@@ -5,6 +5,8 @@ import { Server } from 'socket.io';
 import redisClient from './services/redis.service.js';
 import { verifyToken } from './utils/jwt.js';
 import mongoose from 'mongoose';
+import { generateResult } from './services/ai.service.js';
+
 dotenv.config();
 
 
@@ -62,7 +64,25 @@ io.on('connection', socket => {
 
     socket.join(socket.roomId);
 
-    socket.on("project-message",data =>{
+    socket.on("project-message",async data =>{
+
+        const message =  data.message;
+
+        const aiPresentInMessage = message.includes('@ai');
+        
+        if(aiPresentInMessage){
+            const prompt = message.replace('@ai','');
+            const result = await  generateResult(message);
+            io.to(socket.roomId).emit('project-message',{
+                message:result,
+                sender:{
+                    id:'ai',
+                    email:`@AI-${data.sender.email}`
+                }
+            })
+            return;
+        }
+
         socket.broadcast.to(socket.roomId).emit("project-message",data);
     })
 

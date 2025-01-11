@@ -41,7 +41,7 @@ function Home() {
         }
       )
       .then((response) => {
-        console.log("Create Project", response.data);
+       setproject(response.data.project.project)
       })
       .catch((error) => {
         console.error("Error creating project", error);
